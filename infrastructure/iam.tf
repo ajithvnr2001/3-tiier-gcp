@@ -51,6 +51,7 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
     "google.subject"       = "assertion.sub"
     "attribute.actor"      = "assertion.actor"
     "attribute.repository" = "assertion.repository"
+    "attribute.repository_owner" = "assertion.repository_owner"
   }
 
   # Attribute condition - REQUIRED - replace with your GitHub username
@@ -72,4 +73,10 @@ resource "google_service_account_iam_member" "workload_identity_binding" {
   
   # Option 2: Allow specific repository only (RECOMMENDED - uncomment and update)
   # member = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/ajithvnr2001/3-tiier-gcp"
+}
+
+resource "google_service_account_iam_member" "token_creator" {
+  service_account_id = google_service_account.github_actions.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:${google_service_account.github_actions.email}"
 }
