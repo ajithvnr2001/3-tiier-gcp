@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCP Native DevOps Project</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; width: 400px; }
+        h1 { color: #4285F4; } /* Google Blue */
+        .status { margin-top: 20px; padding: 10px; border-radius: 5px; background: #e8f0fe; color: #1967d2; font-weight: bold;}
+        button { background-color: #34A853; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 20px;}
+        button:hover { background-color: #2e8b46; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚀 GCP 3-Tier App</h1>
+        <p>Frontend is running on <b>GKE</b></p>
+        <button onclick="fetchData()">Ping Backend</button>
+        <div id="result" class="status" style="display:none;">Waiting...</div>
+    </div>
+
+    <script>
+        async function fetchData() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.innerText = "Connecting to Backend...";
+            
+            // In a real K8s setup, we will route via Ingress. 
+            // For now, we assume relative path routing via LoadBalancer
+            try {
+                const response = await fetch('/api/'); 
+                const data = await response.json();
+                resultDiv.innerText = `Backend says: "${data.message}"\nPod: ${data.pod_name}`;
+            } catch (error) {
+                resultDiv.innerText = "Error connecting to Backend (Check Ingress)";
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>

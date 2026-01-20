@@ -1,0 +1,63 @@
+# .github/workflows/ci-cd-pipeline.yaml
+name: Build and Push to GCP
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'src/**'         # Only trigger if source code changes
+      - '.github/**'     # Or if pipeline changes
+
+env:
+  PROJECT_ID: "youtube-292903"  # Your Project ID
+  REGION: "us-central1"         # Your Region
+  REPO_NAME: "youtube-292903-repo" # Your Artifact Registry Name
+  
+  # 👇 RUN 'terraform output workload_identity_provider' TO GET THIS
+  WIF_PROVIDER: "projects/747917945327/locations/global/workloadIdentityPools/github-pool-v3/providers/github-provider-v3" 
+  
+  # 👇 Your Service Account Email
+  WIF_SERVICE_ACCOUNT: "github-actions-sa@youtube-292903.iam.gserviceaccount.com"
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write' # REQUIRED for Workload Identity Federation
+
+    steps:
+    # 1. Checkout Code
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 2. Authenticate to Google Cloud (The Magic Part ✨)
+    - name: Google Auth
+      id: auth
+      uses: 'google-github-actions/auth@v2'
+      with:
+        workload_identity_provider: '${{ env.WIF_PROVIDER }}'
+        service_account: '${{ env.WIF_SERVICE_ACCOUNT }}'
+
+    # 3. Configure Docker to use Google Cloud credentials
+    - name: Docker Auth
+      run: |-
+        gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+    # 4. Build & Push Backend
+    - name: Build & Push Backend
+      run: |-
+        cd src/backend
+        docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:latest .
+        docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:${{ github.sha }} .
+        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:latest
+        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:${{ github.sha }}
+
+    # 5. Build & Push Frontend
+    - name: Build & Push Frontend
+      run: |-
+        cd src/frontend
+        docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:latest .
+        docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:${{ github.sha }} .
+        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:latest
+        docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:${{ github.sha }}
