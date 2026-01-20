@@ -27,45 +27,49 @@ resource "google_project_iam_member" "cloud_deploy_releaser" {
 }
 
 resource "google_project_iam_member" "sa_user" {
-    # Needed for Cloud Deploy to act as this SA
-    project = var.project_id
-    role = "roles/iam.serviceAccountUser"
-    member = "serviceAccount:${google_service_account.github_actions.email}"
+  # Needed for Cloud Deploy to act as this SA
+  project = var.project_id
+  role    = "roles/iam.serviceAccountUser"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
-
 
 # 3. Workload Identity Pool
 resource "google_iam_workload_identity_pool" "github_pool" {
-  workload_identity_pool_id = "github-pool"
-  display_name              = "GitHub Pool"
+  workload_identity_pool_id = "github-pool-v3" 
+  display_name              = "GitHub Pool V3"
   description               = "Identity pool for GitHub Actions"
 }
 
-# 4. Workload Identity Provider (The Connector)
+# 4. Workload Identity Provider
 resource "google_iam_workload_identity_pool_provider" "github_provider" {
   workload_identity_pool_id          = google_iam_workload_identity_pool.github_pool.workload_identity_pool_id
-  workload_identity_pool_provider_id = "github-provider"
-  display_name                       = "GitHub Provider"
+  workload_identity_pool_provider_id = "github-provider-v3"
+  display_name                       = "GitHub Provider V3"
   
+  # Standard Mapping
   attribute_mapping = {
     "google.subject"       = "assertion.sub"
     "attribute.actor"      = "assertion.actor"
     "attribute.repository" = "assertion.repository"
   }
 
+  # Attribute condition - REQUIRED - replace with your GitHub username
+  attribute_condition = "assertion.repository_owner == 'ajithvnr2001'"
+
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
   }
 }
 
-# 5. Allow YOUR specific GitHub Repo to use this Service Account
-# REPLACE 'YOUR_GITHUB_USER/YOUR_REPO_NAME' with your actual details
-# Example: "repo:suresh/gcp-native-project:ref:refs/heads/main"
+# 5. Allow GitHub Actions to impersonate the Service Account
+# Replace 'ajithvnr2001/YOUR_REPO_NAME' with your actual repository
 resource "google_service_account_iam_member" "workload_identity_binding" {
   service_account_id = google_service_account.github_actions.name
   role               = "roles/iam.workloadIdentityUser"
   
-  # Allowing ANY repo for now to make it easy for you, 
-  # BUT in prod, lock this down to specific repo string.
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/YOUR_GITHUB_USER/YOUR_REPO_NAME" 
+  # Option 1: Allow all repos from your GitHub account
+  member = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository_owner/ajithvnr2001"
+  
+  # Option 2: Allow specific repository only (RECOMMENDED - uncomment and update)
+  # member = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_pool.name}/attribute.repository/ajithvnr2001/3-tiier-gcp"
 }
