@@ -31,20 +31,24 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 2. Authenticate to Google Cloud (The Magic Part ✨)
+    # 2. Authenticate to Google Cloud (UPDATED)
     - name: Google Auth
       id: auth
       uses: 'google-github-actions/auth@v2'
       with:
+        token_format: 'access_token' # <--- ADDED THIS
         workload_identity_provider: '${{ env.WIF_PROVIDER }}'
         service_account: '${{ env.WIF_SERVICE_ACCOUNT }}'
 
-    # 3. Configure Docker to use Google Cloud credentials
+    # 3. Docker Login (UPDATED - The Robust Way)
     - name: Docker Auth
-      run: |-
-        gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+      uses: 'docker/login-action@v3'
+      with:
+        registry: '${{ env.REGION }}-docker.pkg.dev'
+        username: 'oauth2accesstoken'
+        password: '${{ steps.auth.outputs.access_token }}' # <--- USES TOKEN DIRECTLY
 
-    # 4. Build & Push Backend
+    # 4. Build & Push Backend (Same as before)
     - name: Build & Push Backend
       run: |-
         cd src/backend
@@ -53,7 +57,7 @@ jobs:
         docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:latest
         docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:${{ github.sha }}
 
-    # 5. Build & Push Frontend
+    # 5. Build & Push Frontend (Same as before)
     - name: Build & Push Frontend
       run: |-
         cd src/frontend
