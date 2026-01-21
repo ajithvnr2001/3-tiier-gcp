@@ -35,7 +35,7 @@ resource "google_project_iam_member" "sa_user" {
 
 # 3. Workload Identity Pool
 resource "google_iam_workload_identity_pool" "github_pool" {
-  workload_identity_pool_id = "github-pool-v3" 
+  workload_identity_pool_id = "gh-actions-cicd-pool" 
   display_name              = "GitHub Pool V3"
   description               = "Identity pool for GitHub Actions"
 }
