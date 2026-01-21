@@ -6,7 +6,7 @@ on:
     branches: [ "main" ]
     paths:
       - 'src/**'         # Only trigger if source code changes
-      - '.github/**'     # Or if pipeline changes
+      - '.github/**'     # Or if pipeline change
 
 env:
   PROJECT_ID: "youtube-292903"  # Your Project ID
