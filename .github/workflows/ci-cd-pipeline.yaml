@@ -71,6 +71,7 @@ jobs:
         delivery_pipeline: 'todo-app-pipeline'
         region: '${{ env.REGION }}'
         source: './' # Points to where skaffold.yaml is
+        name: 'release-${{ github.sha }}'
         images: |
           backend-image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:${{ github.sha }}
           frontend-image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:${{ github.sha }}
