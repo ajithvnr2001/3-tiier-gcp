@@ -1,0 +1,19 @@
+# clouddeploy.yaml
+apiVersion: deploy.cloud.google.com/v1
+kind: DeliveryPipeline
+metadata:
+  name: todo-app-pipeline
+description: "Pipeline for 3-Tier App"
+serialPipeline:
+  stages:
+  - targetId: production-target # We define this target below
+    profiles: []
+
+---
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: production-target
+description: "Production GKE Cluster"
+gke:
+  cluster: projects/youtube-292903/locations/us-central1/clusters/youtube-292903-gke

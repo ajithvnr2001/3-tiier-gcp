@@ -1,0 +1,18 @@
+# skaffold.yaml
+apiVersion: skaffold/v4beta1
+kind: Config
+metadata:
+  name: todo-app
+manifests:
+  rawYaml:
+  - k8s/*.yaml # Read all files in k8s folder
+
+deploy:
+  kubectl: {} # Use standard kubectl to apply
+
+build:
+  artifacts:
+  - image: backend-image # Matches the name in k8s/backend.yaml
+    context: src/backend
+  - image: frontend-image # Matches the name in k8s/frontend.yaml
+    context: src/frontend

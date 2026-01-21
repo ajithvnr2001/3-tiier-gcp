@@ -1,0 +1,49 @@
+# k8s/backend.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      serviceAccountName: default # In prod, use Workload Identity!
+      containers:
+      - name: backend
+        image: backend-image # Skaffold will replace this automatically
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DB_HOST
+          value: "10.175.0.3" # <--- PASTE DB IP HERE
+        - name: DB_USER
+          value: "todo-user"
+        - name: DB_PASS
+          value: "changeme123"
+        - name: DB_NAME
+          value: "todo-app-db"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service # Frontend talks to this name
+spec:
+  type: ClusterIP # Internal only
+  selector:
+    app: backend
+  ports:
+  - port: 80
+    targetPort: 8000
