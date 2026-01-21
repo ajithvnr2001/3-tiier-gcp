@@ -24,31 +24,32 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
-      id-token: 'write' # REQUIRE for Workload Identity Federation
+      id-token: 'write'
 
     steps:
-    # 1. Checkout Code
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 2. Authenticate to Google Cloud (UPDATED)
+    # 1. NEW STEP: Calculate Short SHA (To fix the length error)
+    - name: Get Short SHA
+      id: vars
+      run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
     - name: Google Auth
       id: auth
       uses: 'google-github-actions/auth@v2'
       with:
-        token_format: 'access_token' # <--- ADDED THIS
+        token_format: 'access_token'
         workload_identity_provider: '${{ env.WIF_PROVIDER }}'
         service_account: '${{ env.WIF_SERVICE_ACCOUNT }}'
 
-    # 3. Docker Login (UPDATED - The Robust Way)
     - name: Docker Auth
       uses: 'docker/login-action@v3'
       with:
         registry: '${{ env.REGION }}-docker.pkg.dev'
         username: 'oauth2accesstoken'
-        password: '${{ steps.auth.outputs.access_token }}' # <--- USES TOKEN DIRECTLY
+        password: '${{ steps.auth.outputs.access_token }}'
 
-    # 4. Build & Push Backend (Same as before)
     - name: Build & Push Backend
       run: |-
         cd src/backend
@@ -57,7 +58,6 @@ jobs:
         docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:latest
         docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:${{ github.sha }}
 
-    # 5. Build & Push Frontend (Same as before)
     - name: Build & Push Frontend
       run: |-
         cd src/frontend
@@ -65,13 +65,16 @@ jobs:
         docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:${{ github.sha }} .
         docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:latest
         docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:${{ github.sha }}
+
+    # 6. Create Release (FIXED: Using Short SHA)
     - name: Create Cloud Deploy Release
       uses: 'google-github-actions/create-cloud-deploy-release@v2'
       with:
         delivery_pipeline: 'todo-app-pipeline'
         region: '${{ env.REGION }}'
-        source: './' # Points to where skaffold.yaml is
-        name: 'release-${{ github.sha }}'
+        source: './'
+        # 👇 CHANGED: Uses 'rel-<short_sha>' (e.g., rel-a1b2c3d) - Short & Safe!
+        name: 'rel-${{ env.SHORT_SHA }}' 
         images: |
           backend-image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/backend:${{ github.sha }}
           frontend-image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/frontend:${{ github.sha }}
