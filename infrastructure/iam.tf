@@ -35,7 +35,7 @@ resource "google_project_iam_member" "sa_user" {
 
 # 3. Workload Identity Pool
 resource "google_iam_workload_identity_pool" "github_pool" {
-  workload_identity_pool_id = "gh-actions-cicd-pool" 
+  workload_identity_pool_id = "gh-actions-cicd-pool1" 
   display_name              = "GitHub Pool V3"
   description               = "Identity pool for GitHub Actions"
 }
@@ -79,4 +79,10 @@ resource "google_service_account_iam_member" "token_creator" {
   service_account_id = google_service_account.github_actions.name
   role               = "roles/iam.serviceAccountTokenCreator"
   member             = "serviceAccount:${google_service_account.github_actions.email}"
+}
+
+resource "google_project_iam_member" "storage_admin" {
+  project = var.project_id
+  role    = "roles/storage.admin"
+  member  = "serviceAccount:${google_service_account.github_actions.email}"
 }

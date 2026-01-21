@@ -14,7 +14,7 @@ env:
   REPO_NAME: "youtube-292903-repo" # Your Artifact Registry Name
   
   # 👇 RUN 'terraform output workload_identity_provider' TO GET THIS
-  WIF_PROVIDER: "projects/747917945327/locations/global/workloadIdentityPools/gh-actions-cicd-pool/providers/github-provider-v3" 
+  WIF_PROVIDER: "projects/747917945327/locations/global/workloadIdentityPools/gh-actions-cicd-pool1/providers/github-provider-v3" 
   
   # 👇 Your Service Account Email
   WIF_SERVICE_ACCOUNT: "github-actions-sa@youtube-292903.iam.gserviceaccount.com"
